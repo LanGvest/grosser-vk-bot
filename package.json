@@ -1,0 +1,12 @@
+{
+	"name": "grosser-vk-bot",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js"
+	},
+	"license": "ISC",
+	"dependencies": {
+		"firebase": "^7.15.5",
+		"node-vk-bot-api": "^3.3.4"
+	}
+}
