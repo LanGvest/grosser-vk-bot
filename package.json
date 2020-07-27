@@ -1,5 +1,7 @@
 {
 	"name": "grosser-vk-bot",
+	"version": "1.0.0",
+  	"description": "Бот Großer ВКонтакте",
 	"main": "index.js",
 	"scripts": {
 		"start": "node index.js"
