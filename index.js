@@ -33,7 +33,7 @@ function replaceAll(text, find, to) {
 
 FBD.ref("notify").on("child_added", notify_snap => {
 	if (notify_snap.val().receiver === "admins") {
-		FBD.ref("Система/Администраторы ВКонтакте").once("value").then(fbd_snap => bot.sendMessage(fbd_snap.val().split(","), notify_snap.val().message))
+		FBD.ref("system/admins").once("value").then(fbd_snap => bot.sendMessage(fbd_snap.val().split(","), notify_snap.val().message))
 	} else {
 		bot.sendMessage(notify_snap.val().receiver, notify_snap.val().message);
 	}
@@ -229,14 +229,14 @@ const regKey = new Scene("regKey",
 	(ctx) => {
 		switch (ctx.message.text) {
 			case "Отправить": {
-				FBD.ref("Система/Администраторы ВКонтакте").once("value").then(function(fbd_snap) {
-					let admins = fbd_snap.val().split(", ");
-					FBD.ref(`Пользователи/Заявки/ВКонтакте/${ctx.session.user_id}`).set({
-						"Имя": ctx.session.key_name,
-						"Фамилия": ctx.session.key_surname,
-						"Дата рождения": ctx.session.key_bdate,
-						"Страна": ctx.session.key_country,
-						"Комментарий": ctx.session.key_comment
+				FBD.ref("system/admins").once("value").then(function(fbd_snap) {
+					let admins = fbd_snap.val().split(",");
+					FBD.ref(`users/requests/vk/${ctx.session.user_id}`).set({
+						name: ctx.session.key_name,
+						surname: ctx.session.key_surname,
+						bdate: ctx.session.key_bdate,
+						country: ctx.session.key_country,
+						comment: ctx.session.key_comment
 					}).then(() => {
 						bot.sendMessage(admins, `Внимание администрации Großer! На столе новая заявка.\n\n[id${ctx.session.user_id}|${ctx.session.user_name}] хочет получить регистрационный ключ.\n\nID: ${ctx.session.user_id}\nИмя: ${ctx.session.key_name}\nФамилия: ${ctx.session.key_surname}\nДата рождения: ${ctx.session.key_bdate}\nСтрана: ${ctx.session.key_country}${ctx.session.comment}\n\nВы можете ответить на заявку в коммандном центре Großer: https://grosser.of.by/dev/requests/view?from=vk&id=${ctx.session.user_id}.`);
 					})
@@ -275,11 +275,11 @@ bot.command(/^получить ключ\.?$/i, (ctx) => {
 	}).then(function(vk_snap) {
 		let user_name = vk_snap.response[0].first_name;
 		let user_surname = vk_snap.response[0].last_name;
-		FBD.ref("Пользователи/Ключи").once("value").then(function(fbd_snap) {
+		FBD.ref("users/keys").once("value").then(function(fbd_snap) {
 			let keys = fbd_snap.val();
 			let isKeyExists = false;
 			for (var key in keys) {
-				if (keys[key]["ВКонтакте"] === user_id) {
+				if (keys[key].vk === user_id) {
 					isKeyExists = true;
 					ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваш регистрационный ключ: ${key}.\n\nОбращаем Ваше внимание на то, что данная информация является строго конфиденциальной, поскольку регистрационный ключ необходим для создания нового аккаунта в системе Großer, и после его использования будет признан недействительным.\n\nПрямая ссылка: https://grosser.of.by/checkin?key=${key.toLowerCase()}.\n\nС уважением, [public193609910|администрация Großer].`);
 					break;
@@ -288,9 +288,9 @@ bot.command(/^получить ключ\.?$/i, (ctx) => {
 			if (!isKeyExists) {
 				let isUserExists = false;
 				for (var key in keys) {
-					if (keys[key]["Имя"] === user_name && keys[key]["Фамилия"] === user_surname) {
+					if (keys[key].name === user_name && keys[key].surname === user_surname) {
 						isUserExists = true;
-						FBD.ref(`Пользователи/Ключи/${key}/ВКонтакте`).set(user_id);
+						FBD.ref(`users/keys/${key}/vk`).set(user_id);
 						ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваш регистрационный ключ: ${key}.\n\nОбращаем Ваше внимание на то, что данная информация является строго конфиденциальной, поскольку регистрационный ключ необходим для создания нового аккаунта в системе Großer, и после его использования будет признан недействительным.\n\nПрямая ссылка: https://grosser.of.by/checkin?key=${key.toLowerCase()}.\n\nС уважением, [public193609910|администрация Großer].`);
 						break;
 					}
@@ -312,11 +312,11 @@ bot.command(/^запросить ключ\.?$/i, (ctx) => {
 	}).then(function(vk_snap) {
 		let user_name = vk_snap.response[0].first_name;
 		let user_surname = vk_snap.response[0].last_name;
-		FBD.ref("Пользователи/Ключи").once("value").then(function(fbd_snap) {
+		FBD.ref("users/keys").once("value").then(function(fbd_snap) {
 			let keys = fbd_snap.val();
 			let isKeyExists = false;
 			for (var key in keys) {
-				if (keys[key]["ВКонтакте"] === user_id) {
+				if (keys[key].vk === user_id) {
 					isKeyExists = true;
 					ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
 					break;
@@ -325,15 +325,15 @@ bot.command(/^запросить ключ\.?$/i, (ctx) => {
 			if (!isKeyExists) {
 				let isUserExists = false;
 				for (var key in keys) {
-					if (keys[key]["Имя"] === user_name && keys[key]["Фамилия"] === user_surname) {
+					if (keys[key].name === user_name && keys[key].surname === user_surname) {
 						isUserExists = true;
-						FBD.ref(`Пользователи/Ключи/${key}/ВКонтакте`).set(user_id);
+						FBD.ref(`users/request/${key}/vk`).set(user_id);
 						ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
 						break;
 					}
 				}
 				if (!isUserExists) {
-					FBD.ref(`Пользователи/Заявки/ВКонтакте/${user_id}`).once("value").then(function(fbd_snap_id) {
+					FBD.ref(`users/request/vk/${user_id}`).once("value").then(function(fbd_snap_id) {
 						if (fbd_snap_id.val()) {
 							ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваша заявка рассматривается. Как только администратор примит или отклонит её, Вы сразу же получите уведомление.\n\nС уважением, [public193609910|администрация Großer].`);
 						} else {
