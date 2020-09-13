@@ -33,7 +33,7 @@ function replaceAll(text, find, to) {
 
 FBD.ref("notify").on("child_added", notify_snap => {
 	if (notify_snap.val().receiver === "admins") {
-		FBD.ref("Система/Администраторы ВКонтакте").once("value").then(fbd_snap => bot.sendMessage(fbd_snap.val().split(", "), notify_snap.val().message))
+		FBD.ref("Система/Администраторы ВКонтакте").once("value").then(fbd_snap => bot.sendMessage(fbd_snap.val().split(","), notify_snap.val().message))
 	} else {
 		bot.sendMessage(notify_snap.val().receiver, notify_snap.val().message);
 	}
