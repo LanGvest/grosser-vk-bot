@@ -293,14 +293,14 @@ bot.command(/^запросить ключ\.?$/i, (ctx) => {
 		let user_name = vk_snap.response[0].first_name;
 		let user_surname = vk_snap.response[0].last_name;
 		FBD.ref("users/keys").orderByChild("surname").equalTo(user_surname).once("value").then(snap => {
-            let keys = [];
-            snap.forEach(item => {
-                if(item.val().name === user_name) keys.push(item.key);
-            })
-            if(keys.length === 1) {
-                ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
-            } else {
-                FBD.ref(`users/requests/vk${user_id}`).once("value").then(function(fbd_snap_id) {
+			let keys = [];
+			snap.forEach(item => {
+				if(item.val().name === user_name) keys.push(item.key);
+			})
+			if(keys.length === 1) {
+				ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
+			} else {
+				FBD.ref(`users/requests/vk${user_id}`).once("value").then(function(fbd_snap_id) {
 					if (fbd_snap_id.val()) {
 						ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваша заявка рассматривается. Как только администратор примит или отклонит её, Вы сразу же получите уведомление.\n\nС уважением, [public193609910|администрация Großer].`);
 					} else {
@@ -327,8 +327,8 @@ bot.command(/^запросить ключ\.?$/i, (ctx) => {
 						ctx.scene.enter("regKey");
 					}
 				})
-            }
-        })
+			}
+		})
 	});
 })
 
