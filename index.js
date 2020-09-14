@@ -31,15 +31,6 @@ function replaceAll(text, find, to) {
     return t;
 }
 
-FBD.ref("notify").on("child_added", notify_snap => {
-	if (notify_snap.val().receiver === "admins") {
-		FBD.ref("system/admins").once("value").then(fbd_snap => bot.sendMessage(fbd_snap.val().split(","), notify_snap.val().message))
-	} else {
-		bot.sendMessage(notify_snap.val().receiver, notify_snap.val().message);
-	}
-	FBD.ref(`notify/${notify_snap.key}`).set(null);
-})
-
 const session = new Session();
 bot.use(session.middleware());
 
@@ -231,10 +222,13 @@ const regKey = new Scene("regKey",
 			case "Отправить": {
 				FBD.ref("system/admins").once("value").then(function(fbd_snap) {
 					let admins = fbd_snap.val().split(",");
-					FBD.ref(`users/requests/vk/${ctx.session.user_id}`).set({
+					let bdateArr = ctx.session.key_bdate.split(".");
+					for (var i = 0; i < 3; i++) bdateArr[i] = Number(bdateArr[i]);
+					bdateArr[2] = bdateArr[2] - 2000;
+					FBD.ref(`users/requests/vk${ctx.session.user_id}`).set({
 						name: ctx.session.key_name,
 						surname: ctx.session.key_surname,
-						bdate: ctx.session.key_bdate,
+						bdate: bdateArr.join("."),
 						country: ctx.session.key_country,
 						comment: ctx.session.key_comment
 					}).then(() => {
@@ -275,32 +269,18 @@ bot.command(/^получить ключ\.?$/i, (ctx) => {
 	}).then(function(vk_snap) {
 		let user_name = vk_snap.response[0].first_name;
 		let user_surname = vk_snap.response[0].last_name;
-		FBD.ref("users/keys").once("value").then(function(fbd_snap) {
-			let keys = fbd_snap.val();
-			let isKeyExists = false;
-			for (var key in keys) {
-				if (keys[key].vk === user_id) {
-					isKeyExists = true;
-					ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваш регистрационный ключ: ${key}.\n\nОбращаем Ваше внимание на то, что данная информация является строго конфиденциальной, поскольку регистрационный ключ необходим для создания нового аккаунта в системе Großer, и после его использования будет признан недействительным.\n\nПрямая ссылка: https://grosser.of.by/checkin?key=${key.toLowerCase()}.\n\nС уважением, [public193609910|администрация Großer].`);
-					break;
-				}
-			}
-			if (!isKeyExists) {
-				let isUserExists = false;
-				for (var key in keys) {
-					if (keys[key].name === user_name && keys[key].surname === user_surname) {
-						isUserExists = true;
-						FBD.ref(`users/keys/${key}/vk`).set(user_id);
-						ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваш регистрационный ключ: ${key}.\n\nОбращаем Ваше внимание на то, что данная информация является строго конфиденциальной, поскольку регистрационный ключ необходим для создания нового аккаунта в системе Großer, и после его использования будет признан недействительным.\n\nПрямая ссылка: https://grosser.of.by/checkin?key=${key.toLowerCase()}.\n\nС уважением, [public193609910|администрация Großer].`);
-						break;
-					}
-				}
-				if (!isUserExists) {
-					ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя ещё не зарегистрирован ключ, или Вы уже использовали его.\n\nВы можете оставить заявку на получение регистрационного ключа, запросив его.\n\nС уважением, [public193609910|администрация Großer].`);
-				}
-			}
-		});
-	});
+		FBD.ref("users/keys").orderByChild("surname").equalTo(user_surname).once("value").then(snap => {
+            let keys = [];
+            snap.forEach(item => {
+                if(item.val().name === user_name) keys.push(item.key);
+            })
+            if(keys.length === 1) {
+                ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваш регистрационный ключ: ${keys[0]}.\n\nОбращаем Ваше внимание на то, что данная информация является строго конфиденциальной, поскольку регистрационный ключ необходим для создания нового аккаунта в системе Großer, и после его использования будет признан недействительным.\n\nПрямая ссылка: https://grosser.of.by/checkin?key=${keys[0].toLowerCase()}.\n\nС уважением, [public193609910|администрация Großer].`);
+            } else {
+                ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя ещё не зарегистрирован ключ, или Вы уже использовали его.\n\nВы можете оставить заявку на получение регистрационного ключа, запросив его.\n\nС уважением, [public193609910|администрация Großer].`);
+            }
+        })
+	})
 })
 
 bot.command(/^запросить ключ\.?$/i, (ctx) => {
@@ -312,57 +292,43 @@ bot.command(/^запросить ключ\.?$/i, (ctx) => {
 	}).then(function(vk_snap) {
 		let user_name = vk_snap.response[0].first_name;
 		let user_surname = vk_snap.response[0].last_name;
-		FBD.ref("users/keys").once("value").then(function(fbd_snap) {
-			let keys = fbd_snap.val();
-			let isKeyExists = false;
-			for (var key in keys) {
-				if (keys[key].vk === user_id) {
-					isKeyExists = true;
-					ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
-					break;
-				}
-			}
-			if (!isKeyExists) {
-				let isUserExists = false;
-				for (var key in keys) {
-					if (keys[key].name === user_name && keys[key].surname === user_surname) {
-						isUserExists = true;
-						FBD.ref(`users/request/${key}/vk`).set(user_id);
-						ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
-						break;
-					}
-				}
-				if (!isUserExists) {
-					FBD.ref(`users/request/vk/${user_id}`).once("value").then(function(fbd_snap_id) {
-						if (fbd_snap_id.val()) {
-							ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваша заявка рассматривается. Как только администратор примит или отклонит её, Вы сразу же получите уведомление.\n\nС уважением, [public193609910|администрация Großer].`);
-						} else {
-							ctx.session.user_id = user_id;
-							ctx.session.user_name = user_name;
-							ctx.session.user_surname = user_surname;
-							if (vk_snap.response[0].bdate) {
-								let bdateArr = vk_snap.response[0].bdate.split(".");
-								for (var i = 0; i < 2; i++) {
-									if (bdateArr[i].length === 1) {
-										bdateArr[i] = "0" + bdateArr[i];
-									}
+		FBD.ref("users/keys").orderByChild("surname").equalTo(user_surname).once("value").then(snap => {
+            let keys = [];
+            snap.forEach(item => {
+                if(item.val().name === user_name) keys.push(item.key);
+            })
+            if(keys.length === 1) {
+                ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя уже зарегистрирован ключ, и Вы можете получить его.\n\nС уважением, [public193609910|администрация Großer].`);
+            } else {
+                FBD.ref(`users/requests/vk${user_id}`).once("value").then(function(fbd_snap_id) {
+					if (fbd_snap_id.val()) {
+						ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваша заявка рассматривается. Как только администратор примит или отклонит её, Вы сразу же получите уведомление.\n\nС уважением, [public193609910|администрация Großer].`);
+					} else {
+						ctx.session.user_id = user_id;
+						ctx.session.user_name = user_name;
+						ctx.session.user_surname = user_surname;
+						if (vk_snap.response[0].bdate) {
+							let bdateArr = vk_snap.response[0].bdate.split(".");
+							for (var i = 0; i < 2; i++) {
+								if (bdateArr[i].length === 1) {
+									bdateArr[i] = "0" + bdateArr[i];
 								}
-								if (bdateArr.length === 2) bdateArr[2] = "0000";
-								ctx.session.user_bdate = bdateArr.join(".");
-							} else {
-								ctx.session.user_bdate = "00.00.0000";
 							}
-							if (vk_snap.response[0].country) {
-								ctx.session.user_country = vk_snap.response[0].country.title;
-							} else {
-								ctx.session.user_country = "Беларусь";
-							}
-							ctx.scene.enter("regKey");
+							if (bdateArr.length === 2) bdateArr[2] = "0000";
+							ctx.session.user_bdate = bdateArr.join(".");
+						} else {
+							ctx.session.user_bdate = "00.00.0000";
 						}
-					})
-				}
-			}
-		});
+						if (vk_snap.response[0].country) {
+							ctx.session.user_country = vk_snap.response[0].country.title;
+						} else {
+							ctx.session.user_country = "Беларусь";
+						}
+						ctx.scene.enter("regKey");
+					}
+				})
+            }
+        })
 	});
 })
 
