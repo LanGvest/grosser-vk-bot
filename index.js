@@ -7,8 +7,8 @@ const Stage = require('node-vk-bot-api/lib/stage');
 const app = require('firebase/app');
 require('firebase/database');
 
-const token = process.env.TOKEN;
-const config = JSON.parse(process.env.CONFIG);
+const token = 'ac9c63f743c3517e0ff6f250cde0d67734cb662730f01d3840b37dc72b2a45ae3d962b15a6c51afc4223a';
+const config = JSON.parse('{"apiKey":"AIzaSyAEechxvCFi_4G24P7418pgksPfVhRU1uY","authDomain":"com-grosser-sc.firebaseapp.com","databaseURL":"https://com-grosser-sc.firebaseio.com","projectId":"com-grosser-sc","storageBucket":"com-grosser-sc.appspot.com","messagingSenderId":"274728286603","appId":"1:274728286603:web:f405261fd3751d7f97578e","measurementId":"G-NE4RQ0DQ4Y"}');
 
 const bot = new VkBot(token);
 const firebase = app.initializeApp(config);
@@ -61,6 +61,7 @@ const regKey = new Scene("regKey",
 					]).inline());
 				} else {
 					ctx.scene.leave();
+					console.log(202, `[BOT] ${ctx.session.user_name} ${ctx.session.user_surname} отменил(а) регистрацию нового ключа.`);
 					ctx.reply("Вы отменили регистрацию нового ключа.");
 				}
 			}
@@ -232,10 +233,11 @@ const regKey = new Scene("regKey",
 						country: ctx.session.key_country,
 						comment: ctx.session.key_comment
 					}).then(() => {
-						bot.sendMessage(admins, `Внимание администрации Großer! На столе новая заявка.\n\n[id${ctx.session.user_id}|${ctx.session.user_name}] хочет получить регистрационный ключ.\n\nID: ${ctx.session.user_id}\nИмя: ${ctx.session.key_name}\nФамилия: ${ctx.session.key_surname}\nДата рождения: ${ctx.session.key_bdate}\nСтрана: ${ctx.session.key_country}${ctx.session.comment}\n\nВы можете ответить на заявку в коммандном центре Großer: https://grosser.of.by/dev/requests/view?from=vk&id=${ctx.session.user_id}.`);
+						bot.sendMessage(admins, `Внимание администрации Großer! На столе новая заявка.\n\n[id${ctx.session.user_id}|${ctx.session.user_name}] хочет получить регистрационный ключ.\n\nID: ${ctx.session.user_id}\nИмя: ${ctx.session.key_name}\nФамилия: ${ctx.session.key_surname}\nДата рождения: ${ctx.session.key_bdate}\nСтрана: ${ctx.session.key_country}${ctx.session.comment}\n\nВы можете ответить на заявку в коммандном центре Großer: https://dev.grosser.of.by/requests?id=vk${ctx.session.user_id}.`);
 					})
 				})
 				ctx.scene.leave();
+				console.log(202, `[BOT] ${ctx.session.user_name} ${ctx.session.user_surname} успешно ЗАПРОСИЛ(А) регистрационный ключа.`);
 				ctx.reply("Готово! Ваша заявка была успешно отправлена, и вскоре её рассмотрит администрация Großer. Как только администратор примит или отклонит её, Вы сразу же получите уведомление.");
 				break;
 			}
@@ -246,6 +248,7 @@ const regKey = new Scene("regKey",
 			}
 			default: {
 				ctx.scene.leave();
+				console.log(202, `[BOT] ${ctx.session.user_name} ${ctx.session.user_surname} отменил(а) регистрацию нового ключа.`);
 				ctx.reply("Вы отменили регистрацию нового ключа.");
 			}
 		}
@@ -275,6 +278,7 @@ bot.command(/^получить ключ\.?$/i, (ctx) => {
                 if(item.val().name === user_name) keys.push(item.key);
             })
             if(keys.length === 1) {
+            	console.log(202, `[BOT] ${user_name} ${user_surname} получил(а) свой регистрационный ключ.`);
                 ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! Ваш регистрационный ключ: ${keys[0]}.\n\nОбращаем Ваше внимание на то, что данная информация является строго конфиденциальной, поскольку регистрационный ключ необходим для создания нового аккаунта в системе Großer, и после его использования будет признан недействительным.\n\nПрямая ссылка: https://grosser.of.by/checkin?key=${keys[0].toLowerCase()}.\n\nС уважением, [public193609910|администрация Großer].`);
             } else {
                 ctx.reply(`Здравствуйте, [id${user_id}|${user_name}]! На Ваше имя ещё не зарегистрирован ключ, или Вы уже использовали его.\n\nВы можете оставить заявку на получение регистрационного ключа, запросив его.\n\nС уважением, [public193609910|администрация Großer].`);
@@ -324,6 +328,7 @@ bot.command(/^запросить ключ\.?$/i, (ctx) => {
 						} else {
 							ctx.session.user_country = "Беларусь";
 						}
+						console.log(202, `[BOT] ${user_name} ${user_surname} начал(а) процедуру регистрации нового ключа.`);
 						ctx.scene.enter("regKey");
 					}
 				})
